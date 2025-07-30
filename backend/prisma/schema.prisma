@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User{
+  id Int @id @default(autoincrement())
+  email String @unique
+  password String
+  firstName String?
+  lastName String?
+  image String?
+  color Int?
+  profileSetup Boolean @default(false)
+
+  sender Message[] @relation("sender")
+  recipient Message[] @relation("recipient")
+
+}
+
+
+
+model Message{
+  id Int @id @default(autoincrement())
+  messageType MessageType
+  content String?
+  fileUrl String?
+  timestamp DateTime @default(now())
+  sender User @relation("sender", fields: [senderId], references: [id])
+  senderId Int
+  recipient User? @relation("recipient", fields: [recipientId], references: [id])
+  recipientId Int?
+}
+
+
+
+enum MessageType {
+  text
+  file
+}
