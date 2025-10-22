@@ -69,6 +69,61 @@ const setupServer = (server) => {
     }
 
 
+    const sendChannelMessage = async(message)=>{
+        const {channelId, senderId, content, messageType, fileUrl} = message
+
+        const createdMessage = await db.message.create({
+            data: {
+                // senderId,
+                recipient: undefined,
+                content,
+                messageType,
+                fileUrl,
+                sender: {connect: {id: senderId}},
+                // channelId,
+                channel: {connect: {id: channelId}}
+            },
+            include: {
+                sender: {
+                  select: {
+                    id: true,
+                    email: true,
+                    firstName: true,
+                    lastName: true,
+                    image: true,
+                    color: true
+                  }
+                }
+              }
+
+        })
+
+        
+  const channel = await db.channel.findUnique({
+    where: { id: channelId },
+    include: {
+        members: true,
+        admin: true
+    }
+  });
+
+  // 3️⃣ Combine message and channel info
+  const finalData = { ...createdMessage, channelId: channel.id };
+
+  if(channel && channel.members){
+    channel.members.forEach((member) => {
+        const memberSocketId = userSocketMap.get(member.id)
+        if(memberSocketId){
+            io.to(memberSocketId).emit("recieve-channel-message", finalData)
+        }
+    })
+    const adminSocketId = userSocketMap.get(channel.admin.id)
+    console.log("socketId: ", adminSocketId)
+    if(adminSocketId){
+        io.to(adminSocketId).emit("recieve-channel-message", finalData)
+    }
+  }
+    }
 
 
     
@@ -83,6 +138,7 @@ const setupServer = (server) => {
         }
 
         socket.on("sendMessage", sendMessage)
+        socket.on("send-channel-message", sendChannelMessage)
 
         socket.on("disconnect", () => disconnect(socket))
     })

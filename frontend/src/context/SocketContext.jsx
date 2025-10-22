@@ -1,6 +1,6 @@
 import { useAppStore } from "@/stores";
 import { HOST } from "@/utils/constants";
-import { createContext, useContext, useEffect, useRef } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { io } from "socket.io-client";
 
 const SocketContext = createContext(null)
@@ -14,6 +14,7 @@ export const SocketProvider = ({children}) => {
     const {userInfo} = useAppStore()
 
     useEffect(() => {
+
         if(userInfo){
             socket.current = io(HOST, {
                 withCredentials:true,
@@ -25,15 +26,31 @@ export const SocketProvider = ({children}) => {
             })
 
             const handleReceiveMessage = (message) => {
-                const { selectedChatData, selectedChatType, addMessage } = useAppStore.getState()
+                const { selectedChatData, selectedChatType, addMessage, addContactsInDMContacts } = useAppStore.getState()
 
                 if(selectedChatType !== undefined && (selectedChatData.id === message.sender.id || selectedChatData.id === message.recipient.id)){
                     console.log("message rcv", message)
                     addMessage(message)
                 }
+                addContactsInDMContacts(message)
+            }
+
+            const handleRecieveChannelMessage = (message)=>{
+                console.log("Recieved Channel Message: ", message)
+                const { selectedChatData, selectedChatType, addMessage, addChannelInChannelList } = useAppStore.getState()
+
+                if(
+                    selectedChatType !== undefined &&
+                    selectedChatData.id === message.channelId
+                ){
+                    addMessage(message)
+                }
+                addChannelInChannelList(message)
             }
 
             socket.current.on("receiveMessage", handleReceiveMessage)
+            socket.current.on("recieve-channel-message", handleRecieveChannelMessage)
+
 
             return () => {
                 socket.current.disconnect()
@@ -42,7 +59,7 @@ export const SocketProvider = ({children}) => {
     }, [userInfo])
 
     return(
-        <SocketContext.Provider value={socket.current}>
+        <SocketContext.Provider value={socket}>
             {children}
         </SocketContext.Provider>
     )

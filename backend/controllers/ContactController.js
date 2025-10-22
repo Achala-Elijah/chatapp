@@ -136,3 +136,35 @@ export const getContactsForDMList = async (req, res) => {
     }
 }
 
+
+
+
+
+
+export const getAllContacts = async (req, res) => {
+  try{
+    const users = await db.user.findMany({
+      where: {
+        id: {
+          not: req.userId
+        }
+      },
+      select: {
+        firstName: true,
+        lastName: true,
+        id: true,
+        email: true
+      }
+    })
+
+    const contacts = users.map((user) => ({
+      label: user.firstName ? `${user.firstName} ${user.lastName}` : user.email,
+      value: user.id
+    }))
+    return res.status(200).json({contacts})
+
+  }catch(e){
+      console.log(e)
+      return res.status(500).send("Internal Server Error!")
+  }
+}

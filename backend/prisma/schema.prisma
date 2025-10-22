@@ -20,6 +20,8 @@ model User{
   color Int?
   profileSetup Boolean @default(false)
 
+  admin Channel[] @relation("channelAdmin")
+  channel Channel[] @relation("channelUser")
   sender Message[] @relation("sender")
   recipient Message[] @relation("recipient")
 
@@ -37,6 +39,9 @@ model Message{
   senderId Int
   recipient User? @relation("recipient", fields: [recipientId], references: [id])
   recipientId Int?
+
+  channel Channel @relation("channelMessage", fields: [channelId], references: [id])
+  channelId Int
 }
 
 
@@ -44,4 +49,18 @@ model Message{
 enum MessageType {
   text
   file
+}
+
+
+
+
+model Channel{
+  id Int @id @default(autoincrement())
+  name String
+  members User[] @relation("channelUser")
+  admin User @relation("channelAdmin", fields: [adminId], references: [id])
+  adminId Int
+  messages  Message[] @relation("channelMessage")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }
