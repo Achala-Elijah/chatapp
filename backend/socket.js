@@ -4,7 +4,7 @@ import db from "./models/model.js"
 const setupServer = (server) => {
     const io = new Server(server, {
         cors: {
-               origin: process.env.ORIGIN,
+               origin: process.env.FRONT_END_URL,
                methods: ["GET", "POST"],
                credentials: true
            }
